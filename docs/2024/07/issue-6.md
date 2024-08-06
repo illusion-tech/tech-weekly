@@ -1,4 +1,4 @@
-# 如何在typescript项目中使用rust
+# 如何在 Typescript 项目中使用 Rust
 
 通过WASM,实现在typescript项目中使用rust.
 

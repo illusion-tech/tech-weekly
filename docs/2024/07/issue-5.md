@@ -1,8 +1,11 @@
-# 下载与安装
+# arkTS 入门
+
+## 下载与安装
+
 **官方下载地址：[https://developer.huawei.com/consumer/cn/deveco-studio/](https://developer.huawei.com/consumer/cn/deveco-studio/)**
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/direct/44ea16628707426c8af53f8fb575bf98.png)
 下载完成过后进行安装，安装很简单不在此复述。大致就是一直下一步，需要注意的就是需要node环境，没有的话也可以等开发工具给你安装。
-# 使用
+## 使用
 ## 汉化
 在设置>插件>已安装里面找到简体中文，默认是没有开启的，你点开就可以了。
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/direct/37a1cb8de88347b4840c10be3927cabd.png)
@@ -42,7 +45,7 @@
 
 - 系统组件、属性方法、事件方法具体使用可参考基于ArkTS的声明式开发范式。
 
-# 声明式UI
+## 声明式UI
  和安卓有一点相似。链式写法，如：
  ```
  Image('test.jpg')

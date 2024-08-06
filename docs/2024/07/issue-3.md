@@ -1,513 +1,250 @@
-# Kubernetes 的运用
+# WiFi 连接云平台
+基本硬件：esp8266-01s,Arduino,电阻，Led灯，温湿度传感器，烟雾浓度传感器，杜邦线，面包板等
+这里使用BIGIOT.net与Arduino来实现
+esp8266连线：vcc,EN -3v3 GND-GND ,RX-TX TX-RX 
+LED连线 6 GND
+温湿度传感器连线 Vcc-3v3 GND-GND Data-2
+烟雾浓度传感器 Vcc-3v3 GND-GND Ao-A0 Do-4
 
-1. 创建资源
-kubectl run
+1.进行烧固操作
+使用usb转ttl模块会相对方便一些，使用Arduino连线来进行比较不稳定但是可以实现。
+烧录软件推荐使用安信可的：
+https://docs.ai-thinker.com/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B72
+需要设置好SPI,Cry,FLASH与下载好的固件包。
 
-创建并运行一个或多个容器镜像。
+使用AT指令：
+AT+CWMODE=1来设置应用模式为Station
+AT+CWJAP="wcy","123456789" 设置自己需要的wifi与密码
+AT+CIPSTART="TCP","www.bigiot.net",8181 用于使用tcp连接云服务器
+AT+CIPMODE=1 用于设置为透传模式
+AT+CIPSEND 用于进入透传模式
+都能够通过后显示ready后，esp8266就可以正常使用了，这里是最大的难点，因为很容易烧录失败。
 
-创建一个deployment或job来管理容器。
+2.代码运行
+详细参考文章末尾
 
-语法：kubectl run NAME --image=image [--env="key=value"] [--port=port] [--replicas=replicas] [--dry-run=bool] [--overrides=inline-json] [--command] -- [COMMAND] [args...]
+3.可视化显示。
+进入BigIot.net，登录后可以在首页配置智能设备与数据接口，如果智能设备处于在线状态就是连接成
+功，智能设备的APIKEY与数据接口的ID可以用于接口调用。
+在数据查看中显示：
+https://ldy-1311016186.cos.ap-beijing.myqcloud.com/29d1c5ae4a82088911a87cc2f5dbe7f.png
 
-kubectl run nginx --replicas=3 --labels="app-nginx-example" --image=nginx:1.10 --port=80
+4.作为接口使用
+点击个人信息申请成为开发者，获取到client_id与client_sercet。
+首先获取授权码：接口地址：https://www.bigiot.net/oauth/token POST
+参数：client_id(应用id),client_sercet(应用密码),username(用户ID),password(用户apikey),
+grant_type(password)
+举例：
+{
+    "access_token": "1561a0fd9c6c990e1197fbcbaf4a5368ab2eb0da",
+    "expires_in": 172800,
+    "token_type": "Bearer",
+    "scope": null,
+    "refresh_token": "93d5631f6ebe7f9b26c398324ba691bbc48bda98"
+}
+token请求一次2天有效，不可频繁获取
+而后每次请求资源时需要携带该token
+举例：
+https://www.bigiot.net/oauth/historydata?
+access_token=50f69c98fb079fea603e3659b9b6271493bdfc54&id=23068
 
-kubectl create:
-kubectl create deployment nginx --image=nginx
-# 根据yaml配置文件创建资源对象
-kubectl create -f zookeeper.yaml
-# 根据yaml配置文件一次创建Service和RC
-kubectl create -f my-service.yaml -f my-rc.yaml
-# 创建名称空间
-kubectl create namespace bigdata
-kubectl apply:
-kubectl apply deployment nginx --image=nginx
-# 使用yaml文件创建资源
-kubectl apply -f zookeeper.yaml
-2. 标签操作
-查询标签:
-kubectl get nodes --show-labels
-添加****标签
-# 为指定节点添加标签
-kubectl label nodes nodeName labelName=value
-# 为指定Pod添加标签
-kubectl label pod podName -n nsName labelName=value
-修改****标签
-# 修改节点标签值
-kubectl label nodes nodeName
-# 修改Pod标签值（需要overwrite参数）
-kubectl label pod podName -n nsName labelName=value --overwrite
-删除****标签
-# 为指定节点删除标签
-kubectl label nodes nodeName labelName-
-# 删除Pod标签
-kubectl label pod podName -n nsName labelName-
-2. 查看
-# 查看集群状态
-kubectl get cs
+AT固件烧录详细：
+1.烧录用到的物品:USB转TTL、ESP8266-01S、Arduino（能够外部供电的单片机都可）、杜邦线若干
 
-# 查看Pod
-kubectl get pods
-kubectl get pod
-kubectl get po
+2:ESP8266-01S有运行模式、下载模式、测试模式的区别，进入这下载模式、运行模式通过拉低或拉高
+IO0的电平实现。官方给出的图中ESP8266-01S没有引出GPIO15引脚，只引出了八个引脚，分别是3V3、
+RST、EN、TX、RX、IO0、IO2、GND对于EN、RST、IO2这三个引脚安可信已经在电路中拉高拉低
 
-# 查看指定名称Pod
-kubectl get pod mynginx
-kubectl get pod/mynginx
+3:USB转TTL:USB转TTL跟ESP8266-01S需要接的引脚有三个，RXT、TXD、GND，其中有一个需要注意的问
+题，USB转TTL有3V3、5V和VCC接口，其中3V3与5V是供VCC选择电平的引脚，而不能作为ESP8266-01S的
+供电引脚，所以需要用跳线帽来选择VCC电平
+TTL:RX-TX,TX-RX,GND_GND
+Arduino:3v3-3v3 IO0-GND或悬空 GND-GND
+如果使用Esp8266烧录器，就不需要考虑连线问题
 
-# 同时查看多个资源
-kubectl get deploy,pods
+以安可信固件烧录为例：
+打开烧录软件，会弹出如下图所示界面，然后选择ESP8266  DownloadTool
+打开后界面如下图所示，固件包信息选择.66_DOUT_8Mbit打头的bin文件0x00000，CryStalFreq选择
+26M,SPISPEED选择40MHZ,SPIMODE选择DOUT,FLASHSIZE选择8Mbit，波特率就选择115200，因为ESP8266
+默认波特率是115200，电脑要安装好串口驱动CH340，然后选择自己电脑显示的COM口。
+点击start,如果等待变成蓝色则成功。
+使用AT指令进入透传模式连接贝壳物联。
+//设置WiFi应用模式为Station
+AT+CWMODE=1
+//连接到WiFi路由器，请将SSID替换为路由器名称，Password替换为路由器WiFi密码
+AT+CWJAP="SSID","Password"
+//连接贝壳物联服务器
+AT+CIPSTART="TCP","www.bigiot.net",8181
+//设置为透传模式
+AT+CIPMODE=1
+//进入透传模式
+AT+CIPSEND
+如果是V1.0以上的固件则使用
++++
+AT
+ATE0
+AT+RESTORE
+AT+CWMODE=3
+AT+CWJAP="SSID","Password"
+AT+CIPMUX=0
+AT+CIPMODE=1
+AT+SAVETRANSLINK=1,"121.42.180.30",8181,"TCP"
+如果出现乱码是因为Esp8266开始波特率为74880，上电后变成115200。
 
-# 查看Pod端口信息
-kubectl get pod,svc
+#include <aJSON.h> //引用库文件
+#include <dht11.h> //引用dht11库文件
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+#define Sensor_AO A0
+#define Sensor_DO 4
+#define dht11Pin 2   //定义温湿度针脚号为2号引脚
+unsigned int sensorValue = 0;
+LiquidCrystal_I2C lcd(0x27,16,2);
+String DEVICEID = "22412"; // 你的设备ID=======
+String APIKEY = "077a64a8a"; // 设备密码==
+String INPUTID1 = "23068"; //接口ID1==============
+String INPUTID2 = "23070"; //接口ID2==============
+String INPUTID3 = "20464";
+//=======================================
+dht11 dht;    //实例化一个对象
+unsigned long lastCheckStatusTime = 0; //记录上次报到时间
+unsigned long lastUpdateTime = 0;//记录上次上传数据时间
+const unsigned long postingInterval = 40000; // 每隔40秒向服务器报到一次
+const unsigned long updateInterval = 5000; // 数据上传间隔时间5秒
+unsigned long checkoutTime = 0;//登出时间
+void MyPrintLCD(String MyString){
+ for (int i=0;i<MyString.length();i++)
+ lcd.write(MyString.charAt(i));
+  }
 
-# 特定命名空间资源查看
-kubectl get pods -n bigdata
+void setup() {
+  lcd.init(); // 初始化LCD 
+  lcd.backlight(); //设置LCD背景等亮 
+  
+  pinMode(6,OUTPUT);
+  pinMode(dht11Pin, INPUT); //通过定义将Arduino开发板上dht11Pin引脚(2号口)的工作模式转化为输出模式
+  pinMode(Sensor_DO, INPUT);
+  Serial.begin(115200);
+  delay(5000);//等一会儿ESP8266
+}
+void loop() {
+  sensorValue = analogRead(Sensor_AO);
+      if(sensorValue >50){
+    digitalWrite(6,HIGH);//输出5V电压，LED发光
+    delay(1000);//发光持续1000ms，即1s
+    }else{
+      digitalWrite(6,LOW);//0V，熄灭
+      delay(1000);//发光持续1000ms，即1s
+    }
 
-# 查看所有命名空间下的pod信息
-kubectl get pod --all-namespaces
-kubectl get pods --A
+  //每一定时间查询一次设备在线状态，同时替代心跳
+  if (millis() - lastCheckStatusTime > postingInterval) {
+    
+    
+    checkStatus();
+  }
+  //checkout 50ms 后 checkin
+  if ( checkoutTime != 0 && millis() - checkoutTime > 50 ) {
+    
+    
+    checkIn();
+    checkoutTime = 0;
+  }
+  //每隔一定时间上传一次数据
+  if (millis() - lastUpdateTime > updateInterval) {/    int tol = dht.read(dht11Pin);    //将读取到的值赋给tol
+    float temp = (float)dht.temperature; //将温度值赋值给temp
+    float humi = (float)dht.humidity; //将湿度值赋给humi
+// float temp = random(230, 250) / 10.0; // 生成30-40之间的随机数
+// float humi = random(400, 600) / 10.0; // 生成30-40之间的随机数
+ String l1="";
+ l1=l1+"temp:"+temp;
+ String l2="";
+ l2=l2+"humi:"+humi;
+lcd.setCursor(0,0);                //设置显示指针
+MyPrintLCD(l1); 
+lcd.setCursor(0,1); 
+MyPrintLCD(l2);
+    delay(1000);      //延时1秒
+    update3(DEVICEID, INPUTID1, temp, INPUTID2, humi,INPUTID3, sensorValue);
+    lastUpdateTime = millis();
+  }
 
-# 获取Pod运行在哪个节点上的信息
-kubectl get pod -o wide
+  //读取串口信息
+  while (Serial.available()) {
+    String inputString = Serial.readStringUntil('\n');
+    //检测json数据是否完整
+    int jsonBeginAt = inputString.indexOf("{");
+    int jsonEndAt = inputString.lastIndexOf("}");
+    if (jsonBeginAt != -1 && jsonEndAt != -1) {
+      //净化json数据
+      inputString = inputString.substring(jsonBeginAt, jsonEndAt + 1);
+      int len = inputString.length() + 1;
+      char jsonString[len];
+      inputString.toCharArray(jsonString, len);
+      aJsonObject *msg = aJson.parse(jsonString);
+      processMessage(msg);
+      aJson.deleteItem(msg);
+    }
+  }
+}
+//设备登录
+//{"M":"checkin","ID":"xx1","K":"xx2"}\n
+void checkIn() {
+  Serial.print("{\"M\":\"checkin\",\"ID\":\"");
+  Serial.print(DEVICEID);
+  Serial.print("\",\"K\":\"");
+  Serial.print(APIKEY);
+  Serial.print("\"}\n");
+}
+//强制设备下线，用消除设备掉线延时
+//{"M":"checkout","ID":"xx1","K":"xx2"}\n
+void checkOut() {
+  Serial.print("{\"M\":\"checkout\",\"ID\":\"");
+  Serial.print(DEVICEID);
+  Serial.print("\",\"K\":\"");
+  Serial.print(APIKEY);
+  Serial.print("\"}\n");
+}
 
-# 显示Pod标签信息
-kubectl get pods --show-labels
+//查询设备在线状态
+//{"M":"status"}\n
+void checkStatus() {
+  Serial.print("{\"M\":\"status\"}\n");
+  lastCheckStatusTime = millis();
+}
 
-# 查看特定标签的Pod
-kubectl get pods -l app=example
-
-# 以JSON格式显示Pod的详细信息
-kubectl get pod podName -o json
-
-# 查看RS
-kubectl get replicasets -o wide
-
-# 查看Deployments
-kubectl get deployments -o wide
-
-# 查看ip和端口，也叫端点
-kubectl get ep
-
-# 查看事件
-kubectl get ev
-yaml方式
-# 以yaml格式显示Pod的详细信息
-kubectl get pod podName -o yaml
-kubectl get pod -f pod.yaml
-kubectl get pod -f pod1.yaml -f pod2.yaml
-
-# 用get生成yaml文件
-kubectl get deploy/nginx --export -o yaml > my-deploy2.yaml
-
-# 查看资源子节点详情
-kubectl explain pods.spec.containers
-
-# 用run命令生成yaml文件，dry-run尝试运行，但不会生成，可用于检查语法错误
-kubectl run nginx --image=nginx:latest --port=80 --replicas=3 --dry-run
-# 尝试运行，并生成yaml文件
-kubectl run nginx --image=nginx:latest --port=80 --replicas=3 --dry-run -o yaml > my-deploy.yaml
-3. 发布
-# 暴露端口
-kubectl expose deployment nginx --port=80 --type=NodePort
-kubectl expose deployment nginx --port=80 --type=NodePort --target-port=80 --name=nginx-service
-
-# 输出为yaml文件（推荐）
-kubectl expose deployment nginx --port=80 --type=NodePort --target-port=80 --name=web1 -o yaml > web1.yaml
-kubectl expose deployment nginx -n bigdata --port=80 --type=NodePort
-4. 故障排查
-1. 资源详情排查
-# 显示Node的详细信息
-kubectl describe nodes nodeNamePrefix
-# 显示Pod的详细信息
-kubectl describe pods  podNamePrefix
-# 显示由RC管理的Pod的信息
-kubectl describe pods  rcNamePrefix
-2. 资源日志排查
-# 容器日志查看
-kubectl logs zk-0
-kubectl logs zk-0 -n bigdata
-# 跟踪查看容器的日志，相当于tail -f命令的结果
-kubectl logs -f <pod-name> -c <container-name>
-3. 进入资源容器
-# 进入容器
-kubectl exec -it podName -n nsName /bin/sh    
-kubectl exec -it podName -n nsName /bin/bash
-5. 更新
-1. 版本更新
-kubectl set image deployment/nginx nginx=nginx:1.15
-# 记录更新操作命令以便后续查看变更历史
-kubectl set image deployment/nginx nginx=nginx:1.15 --record
-2. 编辑更新
-kubectl edit deployment/nginx
-3. 滚动更新
-kubectl rolling-update frontend-v1 frontend-v2 --image=image:v2
-kubectl rolling-update frontend --image=image:v2
-kubectl rolling-update frontend-v1 frontend-v2 --rollback
-4. 替换更新
-kubectl replace -f zookersts.yaml
-5. 扩缩容
-kubectl scale deployment nginx --replicas=10
-6. 回滚
-# 查看更新过程
-kubectl rollout status deployment/nginx --namespace=nsName
-# 如果更新成功, 返回值为0 
-kubectl rollout status deployment nginx-deployment --watch=false | grep -ic waiting
-
-# 查看变更历史版本信息
-kubectl rollout history deployment/nginx
-kubectl rollout history deployment/nginx --revision=3 --namespace=nsName
-
-# 终止升级
-kubectl rollout pause deployment/nginx --namespace=nsName
-
-# 继续升级
-kubectl rollout resume deployment/review-demo --namespace=nsName
-
-# 回滚版本
-kubectl rollout undo deployment/nginx --namespace=nsName
-kubectl rollout undo deployment/nginx --to-revision=3  --namespace=nsName
-7. 清理
-# 删除资源
-kubectl delete deploy/nginx
-kubectl delete svc/nginx-service
-
-# 删除所有Pod
-kubectl delete pods --all
-
-# 删除所有包含某个label的Pod和Service
-kubectl delete pod,service -l name=labelName
-
-# 基于yaml定义的名称删除
-kubectl delete -f pod.yaml
-
-# 删除指定命名空间
-kubectl delete ns nsName
-
-# 删除指定命名空间的资源
-kubectl delete pod zk-0 -n bigdata
-kubectl delete pod --all -n bigdata
-
-# 删除计时（观察删除总耗时）
-time -p kubectl delete pod podName
-
-# 强制删除（默认：30s）
-# 指定删除延迟时间：0s，整体删除时间会明显降低
-kubectl delete pod podName -n nsName --grace-period=0 --force
-# 以下两行命令功能相同（grace-period=1，等价于now，立即执行）
-kubectl delete pod podName -n nsName --grace-period=1
-kubectl delete pod podName -n nsName --now
-# 删除所有Pods
-kubectl delete pods --all --force --grace-period=0
-常用操作命令
-以类型命令描述的方式来记录
-基础命令	create	（通过文件名或标准输入创建资源）
-expose	   将一个资源公开为一个新的Service	
-run	       在集群中运行一个特定的镜像	
-set        在对象上设置特定的功能	
-get	       显示一个或多个资源	
-explain	   文档参考资料	
-edit	   使用默认的编辑器编辑资源	
-delete	   通过文件名、（标准输入、资源名称或标签选择器来删除资源）	
-部署命令	 rollout	（管理资源的发布）
-rolling-update	对给定的复制控制器滚动更新	
-scale	    扩容或缩容Pod、Deployment、ReplicaSet、RC或Job	
-autoscale	创建一个自动选择扩容或缩容并设置Pod数量	
-集群管理命令    certificate 	（修改证书资源）
-cluster-info	显示集群信息	
-top	显示资源（CPU、Memory、Storage）使用。需要Heapster运行	
-cordon	标记节点不可调度	
-uncordon	标记节点可调度	
-drain	维护期间排除节点（驱除节点上的应用，准备下线维护）	
-taint	设置污点属性	
-故障诊断和调试命令	describe	（显示特定资源或资源组的详细信息）
-logs	在一个Pod中打印一个容器日志。如果Pod只有一个容器，容器名称是可选的	
-attach	附加到一个运行的容器	
-exec	执行命令到容器	
-port-forward	转发一个或多个本地端口到一个Pod	
-proxy	运行一个proxy到Kubernetes API Server	
-cp	拷贝文件或目录到容器	
-auth	检查授权	
-高级命令	apply	（通过文件名或标准输入对资源应用配置）
-patch	使用补丁修改、更新资源的字段	
-replace	通过文件名或标准输入替换一个资源	
-convert	不同的API版本之间转换配置文件	
-设置命令	label	（更新资源上的标签）
-annotate	更新资源上的注释	
-completion	用于实现kubectl工具自动补全	
-其他命令	api-versions	（打印支持的API版本）
-config	修改kubeconfig文件（用于访问API，比如配置认证信息）	
-help	所有命令帮助	
-plugin	运行一个命令行插件	
-version	打印客户端和服务版本信息	
-1. 获取帮助
-# 检查kubectl是否安装
-rpm -qa | grep kubectl
-# 获取kubectl及其子命令帮助方法
-kubectl --help
-kubectl create --help
-1. Worker上执行kubectl
-# Worker节点上执行
-mkdir -p ~/.kube
-scp master1:/root/.kube/config ~/.kube/
-# 验证（查看K8s集群节点列表）
-kubectl get nodes
-2. api相关操作命令
-# 查看api版本信息
-kubectl api-versions
-# 查看api资源列表
-kubectl api-resources
-3. K8s相关进程操作命令
-netstat -lntp | grep kube-proxy
-netstat -tnlp | grep kubelet
-4. 节点操作命令
-加入新节点
-# 加入新节点，在master节点上执行，将输出再到新节点上执行
-kubeadm token create --print-join-command
-驱逐节点
-# 驱逐节点的Pod
-kubectl drain nodeName
-节点下线
-# 将节点标记为不可调度，不影响现有Pod（注意daemonSet不受影响）
-kubectl cordon nodeName
-节点上线
-# 维护结束，节点重新投入使用
-kubectl uncordon nodeName
-污点设置
-# 设置污点
-kubectl taint nodes nodeName key1=value1:NoSchedule
-kubectl taint nodes nodeName key1=value1:NoExecute
-kubectl taint nodes nodeName key2=value2:NoSchedule
-# 删除污点
-kubectl taint nodes nodeName key1:NoSchedule-
-kubectl taint nodes nodeName key1:NoExecute-
-kubectl taint nodes nodeName key2:NoSchedule-
-# 查看污点详情
-kubectl describe nodes nodeName
-资源创建实例
-Namespace
-命令行方式
-kubectl create namespace bigdata
-yaml方式
-vi ns-test.yaml
-编排文件如下：
-
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: bigdata
-执行yaml文件：
-
-kubectl apply -f ns-test.yaml
-验证：
-
-kubectl get namespaces
-kubectl get namespace
-kubectl get ns
-清除：
-
-kubectl delete -f ns-test.yaml
-kubectl delete ns bigdata
-Pod
-命令行方式
-未提供直接创建Pod的命令，命令行方式一般通过创建Deployment、RC、RS等资源间接创建Pod。
-
-yaml方式
-vi pod-test.yaml
-编排文件如下：
-
-apiVersion: v1
-kind: Pod
-metadata:
-  name: pod1
-spec:
-  containers:
-  - name: nginx-containers
-    image: nginx:latest
-执行yaml文件：
-
-kubectl apply -f pod-test.yaml
-验证：
-
-kubectl get pods
-kubectl get pod
-kubectl get po
-kubectl describe pod pod1
-kubectl get pods -o wide
-curl http://172.16.189.68
-清除：
-
-kubectl delete -f pod-test.yaml
-kubectl delete pod pod1
-Service
-命令行方式
-kubectl run nginx-app --image=nginx:latest --image-pull-policy=IfNotPresent --replicas=2
-kubectl expose deployment.apps nginx-app --type=ClusterIP --target-port=80 --port=83
-参数说明：
-
-expose：创建service。
-deployment.apps：控制器类型。
-nginx-app：应用名称，也是service名称。
-**--type=**ClusterIP：指定service类型。
---target-port=80：指定Pod中容器端口。
---port=80：指定service端口。
-验证：
-
-kubectl get service
-kubectl get svc
-kubectl get endpoints
-kubectl get ep
-curl http://10.104.173.230:83
-kubectl get all
-清除：
-
-kubectl delete service nginx-app
-kubectl delete svc nginx-app
-yaml方式
-vi nginx-service.yaml
-编排文件如下：
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata: 
-  name: nginx-app
-  labels:
-    app: nginx
-spec: 
-  replicas: 2
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginxapp
-        image: nginx:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 80
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-app-svc
-  labels:
-    name: nginx-app-svc
-spec:
-  type: ClusterIP
-  ports: 
-  - protocol: TCP
-    port: 83
-    targetPort: 80
-  selector:
-    app: nginx
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-app-svc2
-  labels:
-    name: nginx-app-svc2
-spec:
-  type: NodePort
-  ports: 
-  - protocol: TCP
-    port: 83
-    targetPort: 80
-    nodePort: 30083
-  selector:
-    app: nginx
-执行yaml文件：
-
-kubectl apply -f nginx-service.yaml
-验证：
-
-kubectl describe deployment nginx-app
-kubectl describe svc nginx-app-svc
-kubectl get service
-kubectl get svc
-kubectl get endpoints
-kubectl get ep
-# nginx-app-svc
-curl http://10.107.141.109:83
-# nginx-app-svc2
-curl http://192.168.216.100:30083
-# 查看k8s集群指定端口的侦听状态
-ss -anput | grep ":30083"
-kubectl get all
-清除：
-
-kubectl delete -f nginx-service.yaml
-kubectl delete service nginx-app-svc
-kubectl delete svc nginx-app-svc
-常用控制器
-1. Deployment
-命令行方式
-kubectl run nginx-app --image=nginx:latest --image-pull-policy=IfNotPresent --replicas=2
-参数说明：
-
-nginx-app：Deployment控制器类型的应用名称。
---image=nginx**:**latest：应用运行的Pod中的Container所使用的镜像。
-IfNotPresent：Container容器镜像下载策略，如果本地有镜像，使用本地，如果本地没有镜像，下载镜像。
-**--replicas=**2：是指应用运行的Pod共计2个副本，这是用户的期望值，Deployment控制器中的ReplicaSet控制器会一直监控此应用运行的Pod副本状态，如果数量达不到用户期望，就会重新拉起一个新的Pod，会让Pod数量一直维持在用户期望值数量。
-验证：
-
-kubectl get deployment.apps
-kubectl get deployment
-kubectl get deploy
-kubectl get replicaset
-kubectl get rs
-kubectl get all
-清除：
-
-kubectl delete deployment nginx-app
-yaml方式
-vi nginx-deployment.yaml
-编排文件如下：
-
-apiVersion: apps/v1
-kind: Deployment
-metadata: 
-  name: nginx-app
-  labels:
-    app: nginx
-spec: 
-  replicas: 2
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginxapp
-        image: nginx:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 80
-执行yaml文件：
-
-kubectl apply -f nginx-deployment.yaml
-验证：
-
-kubectl get deployment.apps
-kubectl get deployment
-kubectl get deploy
-kubectl get replicaset
-kubectl get rs
-kubectl get all
-kubectl describe deployment nginx-app
-kubectl get pods -o wide
-curl http://172.16.189.77
-curl http://172.16.235.138
-清除：
-
-kubectl delete -f nginx-deployment.yaml
-kubectl delete deployment nginx-app
+//处理来自ESP8266透传的数据
+void processMessage(aJsonObject *msg) {
+  aJsonObject* method = aJson.getObjectItem(msg, "M");
+  if (!method) {
+    return;
+  }
+  String M = method->valuestring;
+  if (M == "WELCOME TO BIGIOT") {
+    checkOut();
+    checkoutTime = millis();
+    return;
+  }
+  if (M == "connected") { 
+    checkIn();
+  }
+}
+//同时上传两个接口数据调用此函数
+//{"M":"update","ID":"112","V":{"6":"1","36":"116"}}\n
+void update3(String did, String inputid1, float value1, String inputid2, float value2,String inputid3,float value3) {
+  Serial.print("{\"M\":\"update\",\"ID\":\"");
+  Serial.print(did);
+  Serial.print("\",\"V\":{\"");
+  Serial.print(inputid1);
+  Serial.print("\":\"");
+  Serial.print(value1);
+  Serial.print("\",\"");
+  Serial.print(inputid2);
+  Serial.print("\":\"");
+  Serial.print(value2);
+   Serial.print("\",\"");
+  Serial.print(inputid3);
+  Serial.print("\":\"");
+  Serial.print(value3);
+  Serial.println("\"}}");
+}
