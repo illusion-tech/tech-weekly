@@ -1,5 +1,4 @@
-# tech-weekly
-# kubernetes的运用
+# Kubernetes 的运用
 
 1. 创建资源
 kubectl run

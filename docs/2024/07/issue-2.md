@@ -1,5 +1,4 @@
-# tech-weekly
-# Wifi连接云平台
+# WiFi 连接云平台
 基本硬件：esp8266-01s,Arduino,电阻，Led灯，温湿度传感器，烟雾浓度传感器，杜邦线，面包板等
 这里使用BIGIOT.net与Arduino来实现
 esp8266连线：vcc,EN -3v3 GND-GND ,RX-TX TX-RX 
