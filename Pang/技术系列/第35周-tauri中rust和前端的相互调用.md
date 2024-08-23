@@ -178,4 +178,4 @@ tauri::Builder::default()
   })
 ```
 
-> 前端调用rust可以使用command,也可以使用event,这个内容放到下期。
+> 前端调用rust可以使用command,也可以使用event,这个内容放到下期。(你英文好的话也可以直接看官方文档。)
