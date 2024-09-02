@@ -4,6 +4,10 @@
 
 **八月**
 
+- 第十三期：[tauri的command拆分模块](docs/2024/08/issue-13.md)
+- 第十二期：[tauri中rust和前端的相互调用（前端调用rust）](docs/2024/08/issue-12.md)
+- 第十一期：[tauri中rust和前端的相互调用（rust后端调用前端）](docs/2024/08/issue-11.md)
+- 第十期：[使用Rye来管理Python版本和依赖](docs/2024/08/issue-10.md)
 - 第九期：[前端如何优雅地中断网络请求](docs/2024/08/issue-9.md)
 - 第八期：[Kubernetes 部分知识](docs/2024/08/issue-8.md)
 
