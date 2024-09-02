@@ -4,6 +4,7 @@
 
 **八月**
 
+- 第十六期：[使用OpenCV进行图像处理](docs/2024/08/issue-16.md)
 - 第十五期：[linux下如何使用UE5部署Cesium,并加载本地倾斜摄影数据](docs/2024/08/issue-15.md)
 - 第十四期：[如何将Vue转换为uni-app](docs/2024/08/issue-14.md)
 - 第十三期：[tauri的command拆分模块](docs/2024/08/issue-13.md)
